@@ -1,8 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tflite/flutter_tflite.dart';
-
-import 'main.dart';
+import 'package:object_detection/main.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,10 +11,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late CameraController cameraController;
-  bool isProcessing = false; // New flag to track processing status
-  bool isWorking = false;
+  CameraController cameraController = CameraController(cameras![0], ResolutionPreset.high);
   late CameraImage imgCamera;
+  bool isProcessing = false;
+  bool isWorking = false;
   String result = "";
 
   @override
@@ -39,16 +38,14 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
-
-    cameraController = CameraController(cameras[0], ResolutionPreset.high);
     try {
-      await cameraController.initialize().then((value){
-        if(!mounted){
+      await cameraController.initialize().then((value) {
+        if (!mounted) {
           return;
         }
         setState(() {
           cameraController.startImageStream((imageFromStream) {
-            if(!isWorking && !isProcessing){
+            if (!isWorking && !isProcessing) {
               isWorking = true;
               imgCamera = imageFromStream;
               isProcessing = true; // Set isProcessing to true before running the model
@@ -105,7 +102,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() async{
-    cameraController.dispose(); // Release camera resources
+    if (cameraController != null) {
+      cameraController.dispose(); // Release camera resources
+    }
     super.dispose();
     await Tflite.close();
   }
@@ -123,7 +122,9 @@ class _HomePageState extends State<HomePage> {
                 heightFactor: 0.5,
                 child: GestureDetector(
                   onTap: () {}, // Handle tap actions if needed
-                  child: CameraPreview(cameraController),
+                  child: cameraController != null
+                      ? CameraPreview(cameraController)
+                      : Container(),
                 ),
               ),
               Center(
@@ -135,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         backgroundColor: Colors.black,
                         color: Colors.white,
-                        fontSize: 30.0
+                        fontSize: 30.0,
                       ),
                       textAlign: TextAlign.center,
                     ),
